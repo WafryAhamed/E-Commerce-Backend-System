@@ -42,14 +42,15 @@ public class CartService {
         Cart cart = getOrCreateCart(currentUser);
 
         Product product = productService.getEntityById(request.getProductId());
-        if (product.getStock() < request.getQuantity()) {
-            throw new BadRequestException("Insufficient stock for product: " + product.getName());
-        }
-
         CartItem cartItem = cartItemRepository.findByCartAndProduct(cart, product)
                 .orElse(CartItem.builder().cart(cart).product(product).quantity(0).build());
 
-        cartItem.setQuantity(cartItem.getQuantity() + request.getQuantity());
+        int updatedQuantity = cartItem.getQuantity() + request.getQuantity();
+        if (product.getStock() < updatedQuantity) {
+            throw new BadRequestException("Insufficient stock for product: " + product.getName());
+        }
+
+        cartItem.setQuantity(updatedQuantity);
         cartItemRepository.save(cartItem);
 
         log.info("Item added to cart. user={}, product={}, quantity={}", currentUser.getUsername(), product.getName(), request.getQuantity());
